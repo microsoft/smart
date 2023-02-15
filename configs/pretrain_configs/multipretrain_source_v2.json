@@ -1,0 +1,7 @@
+{
+    "walker": ["run"],
+    "hopper": ["stand"],
+    "finger": ["spin"],
+    "swimmer": ["swimmer15"],
+    "fish": ["swim"]
+}

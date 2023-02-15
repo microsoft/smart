@@ -1,0 +1,6 @@
+{
+    "walker": ["stand", "run"],
+    "cheetah": ["run"],
+    "cartpole": ["swingup"],
+    "hopper": ["hop"]
+}
