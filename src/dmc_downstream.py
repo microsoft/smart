@@ -1,6 +1,7 @@
-import csv
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import os
-import time
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -13,11 +14,10 @@ from models.ct_module import CTLitModule
 
 
 def main(args):
-
     # set seed for reproducibility, although the trainer does not allow deterministic for this implementation
     pl.seed_everything(args.seed, workers=True)
 
-    bc = (args.model_type == "naive")
+    bc = args.model_type == "naive"
     # init data module
     if bc:
         dmc_data = DMCBCDataModule.from_argparse_args(args)
@@ -49,7 +49,7 @@ def main(args):
         save_top_k=args.save_k,
         monitor="val/interactive_reward",
         save_last=True,
-    ) 
+    )
 
     logger = TensorBoardLogger(os.path.join(args.output_dir, "tb_logs"), name="train")
 

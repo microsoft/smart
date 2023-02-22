@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -38,6 +41,3 @@ parser.add_argument("--val_replay_id", type=int, default=5)
 parser.add_argument("--timestep", type=int, default=10000)
 parser.add_argument("--rand_select", default=False, action="store_true")
 parser.add_argument("--biased_multi", default=False, action="store_true")
-
-
-

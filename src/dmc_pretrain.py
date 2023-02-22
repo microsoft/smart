@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import json
 import os
 
@@ -12,7 +15,6 @@ from models.multitask_ct_module import MultiTaskCTLitModule
 
 
 def main(args):
-
     # set seed for reproducibility, although the trainer does not allow deterministic for this implementation
     pl.seed_everything(args.seed, workers=True)
 
@@ -27,7 +29,7 @@ def main(args):
         args.dataset_types = ["fullcollect", "randcollect"]
         args.num_steps = args.num_steps // 2
     args.biased_multi = True
-    
+
     # init data module
     dmc_data = DMCMultiDomainDataModule.from_argparse_args(args)
 
@@ -79,7 +81,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-
     parser = DMCMultiDomainDataModule.add_argparse_args(parser)
     parser = MultiTaskCTLitModule.add_model_specific_args(parser)
 

@@ -1,32 +1,21 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 # credits: https://github.com/ashleve/lightning-hydra-template/blob/main/src/models/mnist_module.py
 from collections import OrderedDict
 from typing import Any, List
 
-import numpy as np
 import torch
 from pytorch_lightning import LightningModule
-from torch.nn import functional as F
 
 from models.components.mingpt import GPT, GPTConfig
-from models.utils import (
-    get_exp_return,
-    get_exp_return_dmc,
-    get_min_action,
-    get_min_action_dmc,
-    top_k_logits,
-)
+from models.utils import get_min_action_dmc
 
 
 class MultiTaskCTLitModule(LightningModule):
-    """LightningModule for multi-task control transformer.
-    """
+    """LightningModule for multi-task control transformer."""
 
-    def __init__(
-        self, 
-        betas=(0.9, 0.95),
-        weight_decay=0.1,
-        **kwargs
-    ):
+    def __init__(self, betas=(0.9, 0.95), weight_decay=0.1, **kwargs):
         super().__init__()
 
         # this line allows to access init params with 'self.hparams' attribute
@@ -40,7 +29,7 @@ class MultiTaskCTLitModule(LightningModule):
             for domain in self.domains:
                 vocab_size += get_min_action_dmc(domain)
         else:
-            vocab_size = get_min_action_dmc(self.hparams.domain)  
+            vocab_size = get_min_action_dmc(self.hparams.domain)
 
         if self.hparams.agent_type == "gpt":
             block_size = self.hparams.context_length * 2
@@ -76,28 +65,32 @@ class MultiTaskCTLitModule(LightningModule):
         parser.add_argument("--lr", type=float, default=6e-4)
 
         ## whether to use supervision
-        parser.add_argument('--unsupervise', action='store_true')
-        parser.add_argument('--no-unsupervise', dest='unsupervise', action='store_false')
+        parser.add_argument("--unsupervise", action="store_true")
+        parser.add_argument("--no-unsupervise", dest="unsupervise", action="store_false")
         parser.set_defaults(unsupervise=True)
 
         ## whether to use whether to use forward prediction
-        parser.add_argument('--forward', action='store_true')
-        parser.add_argument('--no-forward', dest='forward', action='store_false')
+        parser.add_argument("--forward", action="store_true")
+        parser.add_argument("--no-forward", dest="forward", action="store_false")
         parser.set_defaults(forward=True)
 
         ## whether to use whether to use inverse prediction
-        parser.add_argument('--inverse', action='store_true')
-        parser.add_argument('--no-inverse', dest='inverse', action='store_false')
+        parser.add_argument("--inverse", action="store_true")
+        parser.add_argument("--no-inverse", dest="inverse", action="store_false")
         parser.set_defaults(inverse=True)
 
         ## whether to use whether to use random mask hindsight control
-        parser.add_argument('--rand_inverse', action='store_true')
-        parser.add_argument('--no-rand_inverse', dest='rand_inverse', action='store_false')
+        parser.add_argument("--rand_inverse", action="store_true")
+        parser.add_argument("--no-rand_inverse", dest="rand_inverse", action="store_false")
         parser.set_defaults(rand_inverse=True)
 
-        parser.add_argument("--rand_mask_size", type=int, default=-1, help="mask size for action, -1 is to set masks by curriculum")
-        parser.add_argument("--mask_obs_size", type=int, default=-1, help="mask size for observations, -1 is to set masks by curriculum")
-        
+        parser.add_argument(
+            "--rand_mask_size", type=int, default=-1, help="mask size for action, -1 is to set masks by curriculum"
+        )
+        parser.add_argument(
+            "--mask_obs_size", type=int, default=-1, help="mask size for observations, -1 is to set masks by curriculum"
+        )
+
         # weights
         parser.add_argument("--forward_weight", type=float, default=1.0)
 
@@ -106,7 +99,7 @@ class MultiTaskCTLitModule(LightningModule):
         parser.add_argument("--n_head", type=int, default=8)
         parser.add_argument("--rtg_layers", type=int, default=1)
         parser.add_argument("--bc_layers", type=int, default=1)
-        parser.add_argument("--pred_layers", type=int, default=1) 
+        parser.add_argument("--pred_layers", type=int, default=1)
 
         ## additional options that are not used in the original method
         parser.add_argument("--reward", default=False, action="store_true", help="whether to predict reward")

@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 # credits: https://github.com/ashleve/lightning-hydra-template/tree/main/src/datamodules
 import os
 from typing import Optional
@@ -15,7 +18,6 @@ from models.utils import get_min_action_dmc
 def create_selected_dataset(
     domain_name, task_name, data_dir_prefix, num_steps, replay_id=1, stack_size=4, select_rate=0.1, rand_select=False
 ):
-
     obss, actions, returns, done_idxs, rtgs, timesteps, step_returns = create_dataset(
         domain_name, task_name, data_dir_prefix, num_steps, replay_id, stack_size
     )
@@ -74,7 +76,6 @@ def create_selected_dataset(
 
 
 def create_dataset(domain_name, task_name, data_dir_prefix, num_steps, replay_id=1, stack_size=4):
-
     env = dmc2gym.make(
         domain_name=domain_name,
         task_name=task_name,
@@ -512,8 +513,10 @@ class DMCBCDataModule(LightningDataModule):
     def test_dataloader(self):
         return None
 
+
 class DMCMultiDomainDataModule(LightningDataModule):
-    """Example of LightningDataModule for pretraining in multiple domains and multiple tasks on DMC."""
+    """Example of LightningDataModule for pretraining in multiple domains and multiple tasks on
+    DMC."""
 
     def __init__(
         self,
