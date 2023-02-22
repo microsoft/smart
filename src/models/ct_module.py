@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 from collections import OrderedDict
 from typing import Any, List
 
@@ -7,24 +10,42 @@ from pytorch_lightning import LightningModule
 from torch.nn import functional as F
 
 from models.components.mingpt import GPT, GPTConfig
-from models.utils import (
-    get_exp_return_dmc,
-    get_min_action_dmc,
-    top_k_logits,
-)
+from models.utils import get_exp_return_dmc, get_min_action_dmc, top_k_logits
 
 
 class CTLitModule(LightningModule):
-    """LightningModule for Control Transformer.
-    """
+    """LightningModule for Control Transformer."""
 
     def __init__(
         self,
-        domain,
-        task,
-        betas=(0.9, 0.95),
-        weight_decay=0.1,
-        **kwargs,
+        agent_type: str,
+        model_type: str,
+        domain: str,
+        task: str,
+        n_embd: int,
+        lr: float,
+        unsupervise: bool,
+        forward: bool,
+        inverse: bool,
+        reward: bool,
+        rand_inverse: bool,
+        freeze_encoder: bool,
+        rand_attn_only: bool,
+        rand_mask_size: bool,
+        mask_obs_size: bool,
+        forward_weight: float,
+        n_layer: int,
+        n_head: int,
+        rtg_layers: int,
+        bc_layers: int,
+        pred_layers: int,
+        context_length: int,
+        epochs: int,
+        timestep: int,
+        weight_decay: float,
+        betas: List[float],
+        eval_epochs: int,
+        seed: int,
     ):
         super().__init__()
 
@@ -54,41 +75,6 @@ class CTLitModule(LightningModule):
             print(self.net)
         else:
             assert "agent type not supported"
-
-    @staticmethod
-    def add_model_specific_args(parent_parser):
-        parser = parent_parser.add_argument_group("CTModel")
-
-        parser.add_argument("--agent_type", type=str, default="gpt")
-        parser.add_argument(
-            "--model_type", type=str, default="reward_conditioned", choices=["reward_conditioned", "naive"],
-            help="the reward_conditioned option learns the RTG-conditioned policy, while the naive option learns the behavior cloning policy"
-        )
-        parser.add_argument("--n_embd", type=int, default=256)
-        parser.add_argument("--lr", type=float, default=6e-4)
-
-        ## set false in downstream learning, unless using as auxiliary tasks
-        parser.add_argument("--unsupervise", default=False, action="store_true")
-        parser.add_argument("--forward", default=False, action="store_true")
-        parser.add_argument("--inverse", default=False, action="store_true")
-        parser.add_argument("--reward", default=False, action="store_true")
-        parser.add_argument("--rand_inverse", default=False, action="store_true")
-        parser.add_argument("--freeze_encoder", default=False, action="store_true")
-        parser.add_argument("--rand_attn_only", default=False, action="store_true")
-        parser.add_argument("--rand_mask_size", type=int, default=-1)
-        parser.add_argument("--mask_obs_size", type=int, default=-1)
-        
-        # weights
-        parser.add_argument("--forward_weight", type=float, default=1.0)
-
-        # layers and network configs
-        parser.add_argument("--n_layer", type=int, default=8)
-        parser.add_argument("--n_head", type=int, default=8)
-        parser.add_argument("--rtg_layers", type=int, default=1)
-        parser.add_argument("--bc_layers", type=int, default=1)
-        parser.add_argument("--pred_layers", type=int, default=1) 
-
-        return parent_parser
 
     def load_my_checkpoint(self, path, no_action=False, strict=True, no_action_head=False):
         m = torch.load(path)["state_dict"]
@@ -299,7 +285,18 @@ class CTLitModule(LightningModule):
         return eval_return, std_return
 
     @torch.no_grad()
-    def sample(self, x, steps, cont_action=True, temperature=1.0, sample=False, top_k=None, actions=None, rtgs=None, timesteps=None):
+    def sample(
+        self,
+        x,
+        steps,
+        cont_action=True,
+        temperature=1.0,
+        sample=False,
+        top_k=None,
+        actions=None,
+        rtgs=None,
+        timesteps=None,
+    ):
         """take a conditioning sequence of indices in x (of shape (b,t)) and predict the next token
         in the sequence, feeding the predictions back into the model each time.
 

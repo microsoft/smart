@@ -1,0 +1,16 @@
+# ref: https://github.com/pre-commit-ci-demo/demo/blob/main/.github/workflows/pre-commit.yml
+name: pre-commit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: pre-commit/action@v2.0.0

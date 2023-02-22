@@ -1,0 +1,14 @@
+{
+    "Registrations": [
+        {
+            "component": {
+                "type": "git",
+                "git": {
+                    "repositoryUrl": "https://github.com/denisyarats/dmc2gym",
+                    "commitHash": "06f7e335d988b17145947be9f6a76f557d0efe81"
+                }
+            }
+        },
+    ],
+    "Version": 1
+}

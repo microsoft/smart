@@ -1,0 +1,113 @@
+seed: 123
+
+output_dir: ./outputs
+exp_name:
+load_model_from:
+no_load_action: False
+no_strict: False
+no_action_head: False
+stat_file: stat.csv
+timestep: 10000
+epochs: 50
+eval_epochs: 50
+
+trainer:
+  default_root_dir: ${output_dir}
+
+  num_nodes: 1
+  devices: 1
+  accelerator: gpu
+  strategy: ddp
+
+  min_epochs: 1
+  max_epochs: ${epochs}
+
+  enable_progress_bar: true
+
+  # debugging
+  fast_dev_run: false
+  enable_checkpointing: True
+
+logger:
+  tensorboard:
+    _target_: pytorch_lightning.loggers.tensorboard.TensorBoardLogger
+    save_dir: ${output_dir}/tb_logs/exp_name
+    name: null
+    version: null
+    log_graph: False
+    default_hp_metric: True
+    prefix: ""
+
+callbacks:
+  checkpoint:
+    _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    dirpath: "${output_dir}/checkpoints_bc/"
+    monitor: "val/interactive_reward" # name of the logged metric which determines when model is improving
+    mode: "max" # "max" means higher metric value is better, can be also "min"
+    save_top_k: 5 # save k best models (determined by above metric)
+    filename: "best_reward_model" # best_model
+
+domain_and_task:
+  timesteps: 250
+  domain: "walker"
+  task: "walk"
+
+data:
+  # _target_ can be datamodules.dmc_datamodule.DMCDataModule or datamodules.dmc_datamodule.DMCDataModule
+  domain: ${domain_and_task.domain}
+  task: ${domain_and_task.task}
+  data_dir_prefix: ./data
+  context_length: 30
+  num_buffers: 50
+  num_steps: 500000
+  trajectories_per_buffer: 10 # Number of trajectories to sample from each of the buffers
+  stack_size: 4
+  batch_size: 256
+  num_workers: 1
+  train_replay_id: 1
+  val_replay_id: 2
+
+  # used for DMCBCDataModule only (used when model_type is "naive")
+  select_rate: 0
+  rand_select: False
+
+# DTModel
+model:
+  _target_: models.ct_module.CTLitModule
+
+  domain: ${domain_and_task.domain}
+  task: ${domain_and_task.task}
+  agent_type: gpt
+  model_type: reward_conditioned # choices=["reward_conditioned", "naive"]
+  timestep: ${timestep}
+  n_embd: 256
+  lr: 6e-4
+  context_length: 30
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  epochs: ${epochs}
+  eval_epochs: ${eval_epochs}
+  seed: ${seed}
+
+  # set these to false in downstream learning (unless using as an auxiliary task)
+  unsupervise: False
+  forward: False
+  inverse: False
+  reward: False
+  rand_inverse: False
+  freeze_encoder: False
+  rand_attn_only: False
+
+  ## whether to use random mask hindsight control
+  rand_mask_size: -1 # mask size for action, -1 is to set masks by curriculum
+  mask_obs_size: -1 # mask size for observations, -1 is to set masks by curriculum
+
+  # weights
+  forward_weight: 1.0
+
+  # layers and network configs
+  n_layer: 8
+  n_head: 8
+  bc_layers: 1
+  pred_layers: 1
+  rtg_layers: 1

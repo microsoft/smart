@@ -1,72 +1,39 @@
-import csv
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import os
-import time
 
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
+from omegaconf import OmegaConf
 
-from arguments import parser
 from datamodules.dmc_datamodule import DMCBCDataModule, DMCDataModule
 from datamodules.dummy_datamodule import RandomDataset
-from models.ct_module import CTLitModule
+from utils import pl_utils
 
 
-def main(args):
+def main(cfg):
+    cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-    # set seed for reproducibility, although the trainer does not allow deterministic for this implementation
-    pl.seed_everything(args.seed, workers=True)
-
-    bc = (args.model_type == "naive")
-    # init data module
-    if bc:
-        dmc_data = DMCBCDataModule.from_argparse_args(args)
+    if cfg.model.model_type == "naive":
+        # bc = True
+        dmc_data = DMCBCDataModule(**cfg.data)
     else:
-        dmc_data = DMCDataModule.from_argparse_args(args)
+        dmc_data = DMCDataModule(**cfg.data)
 
-    # init training module
-    dict_args = vars(args)
-
-    model = CTLitModule(**dict_args)
-    if args.load_model_from:
+    model = pl_utils.instantiate_class(cfg["model"])
+    if cfg.load_model_from:
         model.load_my_checkpoint(
-            args.load_model_from,
-            no_action=args.no_load_action,
-            strict=not args.no_strict,
-            no_action_head=args.no_action_head,
+            cfg.load_model_from,
+            no_action=cfg.no_load_action,
+            strict=not cfg.no_strict,
+            no_action_head=cfg.no_action_head,
         )
-        print("loaded model from", args.load_model_from)
+        print("loaded model from", cfg.load_model_from)
 
     # init root dir
-    os.makedirs(args.output_dir, exist_ok=True)
-    print("output dir", args.output_dir)
+    os.makedirs(cfg.output_dir, exist_ok=True)
+    print("output dir", cfg.output_dir)
 
-    # checkpoint saving metrics
-    checkpoint_callback = ModelCheckpoint(
-        dirpath=os.path.join(args.output_dir, "checkpoints_bc"),
-        filename="best_reward_model",
-        mode="max",
-        save_top_k=args.save_k,
-        monitor="val/interactive_reward",
-        save_last=True,
-    ) 
-
-    logger = TensorBoardLogger(os.path.join(args.output_dir, "tb_logs"), name="train")
-
-    # init trainer
-    trainer = pl.Trainer(
-        accelerator=args.accelerator,
-        devices=args.devices,
-        num_nodes=args.nodes,
-        default_root_dir=args.output_dir,
-        min_epochs=1,
-        max_epochs=args.epochs,
-        callbacks=[checkpoint_callback],
-        strategy="ddp",
-        # strategy='ddp_find_unused_parameters_false',
-        fast_dev_run=False,
-        logger=logger,
-    )
+    trainer = pl_utils.instantiate_trainer(cfg_dict)
 
     trainer.fit(model, datamodule=dmc_data)
 
@@ -76,9 +43,15 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = DMCDataModule.add_argparse_args(parser)
-    parser = CTLitModule.add_model_specific_args(parser)
+    cfg = OmegaConf.from_cli()
 
-    args = parser.parse_args()
+    if "base" in cfg:
+        basecfg = OmegaConf.load(cfg.base)
+        del cfg.base
+        cfg = OmegaConf.merge(basecfg, cfg)
+        print(OmegaConf.to_yaml(cfg))
+        main(cfg)
+    else:
+        raise SystemExit("Base configuration file not specified! Exiting.")
 
-    main(args)
+    main(cfg)

@@ -1,4 +1,23 @@
+data/
+pretrained_models/
 
-outputs/
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
 
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# data
+data/
+
+# logs
+logs/
+outputs/
+
+# env
+.env
+.autoenv

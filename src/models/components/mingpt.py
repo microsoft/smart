@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 """The MIT License (MIT) Copyright (c) 2020 Andrej Karpathy.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -78,7 +81,6 @@ def build_mlp(
     init_method=None,
     bias=True,
 ):
-
     layers = []
     in_size = input_size
     for _ in range(n_layers - 1):
@@ -448,7 +450,7 @@ class GPT(nn.Module):
         if pred_rand_inverse:
             # randomly mask past actions and predict them
             rand_mask_idx = np.random.choice(actions.shape[1], rand_mask_size, replace=False)
-            masked_token = token_embeddings.clone() 
+            masked_token = token_embeddings.clone()
             for j in range(rand_mask_size):
                 masked_token[:, 1 + 2 * rand_mask_idx[j], :] = -1
 
@@ -488,7 +490,6 @@ class GPT(nn.Module):
         return logits, losses
 
     def get_embeddings(self, states, actions, timesteps):
-
         if actions is not None and actions.shape[1] == 0:
             actions = None
         is_testing = (actions is None) or (actions.shape[1] != states.shape[1])
@@ -541,8 +542,8 @@ class GPT(nn.Module):
         """Choose what optimizers and learning-rate schedulers to use in your optimization.
         Normally you'd need one. But in the case of GANs or similar you might have multiple.
 
-        See examples here:
-            https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
+        See examples here:     https://pytorch-
+        lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
         """
         # separate out all parameters to those that will and won't experience regularizing weight decay
         decay = set()

@@ -1,0 +1,122 @@
+seed: 123
+
+output_dir: ./outputs
+exp_name:
+load_model_from:
+no_load_action: False
+no_strict: False
+no_action_head: False
+stat_file: stat.csv
+timestep: 10000
+epochs: 50
+
+trainer:
+  default_root_dir: ${output_dir}
+
+  num_nodes: 1
+  devices: 1
+  accelerator: gpu
+  strategy: ddp
+
+  min_epochs: 1
+  max_epochs: ${epochs}
+
+  enable_progress_bar: true
+
+  # debugging
+  fast_dev_run: false
+  enable_checkpointing: True
+
+logger:
+  tensorboard:
+    _target_: pytorch_lightning.loggers.tensorboard.TensorBoardLogger
+    save_dir: ${output_dir}/tb_logs/exp_name
+    name: null
+    version: null
+    log_graph: False
+    default_hp_metric: True
+    prefix: ""
+
+callbacks:
+  checkpoint:
+    _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    dirpath: "${output_dir}/checkpoints/"
+    monitor: "val/avg_loss" # name of the logged metric which determines when model is improving
+    mode: "min" # "max" means higher metric value is better, can be also "min"
+    save_top_k: 5 # save k best models (determined by above metric)
+    save_last: True # additionaly always save model from last epoch
+    verbose: False
+    filename: "checkpoint_{epoch:02d}" # best_model
+
+domain_and_task:
+  source_data_type: rand # choices: rand, full, max
+  timesteps: 250
+  source_envs:
+    walker: ["walk"]
+    cheetah: ["run"]
+    # walker: ["stand", "run"]
+    # cartpole: ["swingup"]
+    # hopper: ["hop"]
+    # finger: ["spin"]
+
+data:
+  _target_: datamodules.dmc_datamodule.DMCMultiDomainDataModule
+
+  source_envs: ${domain_and_task.source_envs}
+  data_dir_prefix: ./data
+  context_length: 30
+  num_buffers: 50
+  num_steps: 80000
+  trajectories_per_buffer: 10 # Number of trajectories to sample from each of the buffers
+  stack_size: 4
+  batch_size: 256
+  num_workers: 1
+  train_replay_id: 1
+  val_replay_id: 2
+  select_rate: 0
+  seed: ${seed}
+  biased_multi: False
+  source_data_type: ${domain_and_task.source_data_type}
+
+# DTModel
+model:
+  _target_: models.multitask_ct_module.MultiTaskCTLitModule
+
+  source_envs: ${domain_and_task.source_envs}
+  agent_type: gpt
+  model_type: reward_conditioned # choices=["reward_conditioned", "naive"]
+  timestep: ${timestep}
+  n_embd: 256
+  lr: 6e-4
+  freeze_encoder: False
+  context_length: 30
+  betas: [0.9, 0.95]
+  weight_decay: 0.1
+  epochs: ${epochs}
+
+  ## whether to use supervision
+  unsupervise: True
+
+  ## whether to use forward prediction
+  forward: True
+
+  ## whether to use inverse prediction
+  inverse: True
+
+  ## whether to use random mask hindsight control
+  rand_inverse: True
+  rand_mask_size: -1 # mask size for action, -1 is to set masks by curriculum
+  mask_obs_size: -1 # mask size for observations, -1 is to set masks by curriculum
+
+  # weights
+  forward_weight: 1.0
+
+  # layers and network configs
+  n_layer: 8
+  n_head: 8
+  bc_layers: 1
+  pred_layers: 1
+  rtg_layers: 1
+
+  ## additional options that are not used in the original method
+  reward: False # whether to predict reward

@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "dmc_pretrain",
+            "type": "python",
+            "request": "launch",
+            "program": "src/dmc_pretrain.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "base=configs/pretrain.yaml",
+                "trainer.num_nodes=1",
+                "trainer.devices=1",
+            ]
+        },
+        {
+            "name": "dmc_downstream",
+            "type": "python",
+            "request": "launch",
+            "program": "src/dmc_downstream.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "base=configs/downstream.yaml",
+                "trainer.num_nodes=1",
+                "trainer.devices=1",
+            ]
+        },
+    ]
+}

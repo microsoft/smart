@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import os
 from typing import Optional
 
@@ -14,7 +17,6 @@ from models.utils import get_min_action_dmc
 def create_selected_dataset(
     domain_name, task_name, data_dir_prefix, num_steps, replay_id=1, stack_size=4, select_rate=0.1, rand_select=False
 ):
-
     obss, actions, returns, done_idxs, rtgs, timesteps, step_returns = create_dataset(
         domain_name, task_name, data_dir_prefix, num_steps, replay_id, stack_size
     )
@@ -73,7 +75,6 @@ def create_selected_dataset(
 
 
 def create_dataset(domain_name, task_name, data_dir_prefix, num_steps, replay_id=1, stack_size=4):
-
     env = dmc2gym.make(
         domain_name=domain_name,
         task_name=task_name,
@@ -269,6 +270,8 @@ class DMCDataModule(LightningDataModule):
         num_workers=1,
         train_replay_id=1,
         val_replay_id=2,
+        select_rate=0,  # not used. only to match signature with DMCBCDataModule
+        rand_select=False,  # not used. only to match signature with DMCBCDataModule
     ):
         super().__init__()
 
@@ -280,7 +283,7 @@ class DMCDataModule(LightningDataModule):
 
         if self.hparams.domain not in self.hparams.data_dir_prefix:
             self.hparams.data_dir_prefix = os.path.join(
-                self.hparams.data_dir_prefix, "fullcollect_" + self.hparams.domain + "_" + self.hparams.task
+                self.hparams.data_dir_prefix, "randcollect_" + self.hparams.domain + "_" + self.hparams.task
             )
 
     @property
@@ -511,8 +514,10 @@ class DMCBCDataModule(LightningDataModule):
     def test_dataloader(self):
         return None
 
+
 class DMCMultiDomainDataModule(LightningDataModule):
-    """Example of LightningDataModule for pretraining in multiple domains and multiple tasks on DMC."""
+    """Example of LightningDataModule for pretraining in multiple domains and multiple tasks on
+    DMC."""
 
     def __init__(
         self,
@@ -528,8 +533,8 @@ class DMCMultiDomainDataModule(LightningDataModule):
         train_replay_id=1,
         val_replay_id=2,
         select_rate=0.1,
-        seed=42,
-        dataset_types=["fullcollect"],
+        seed=123,
+        source_data_type=["full"],
         biased_multi=False,
     ):
         super().__init__()
@@ -537,13 +542,21 @@ class DMCMultiDomainDataModule(LightningDataModule):
         # this line allows to access init params with 'self.hparams' attribute
         self.save_hyperparameters(logger=False)
 
-        self.domains = self.hparams.source_envs.keys()
+        self.domains = source_envs.keys()
         self.action_dims = [get_min_action_dmc(domain) for domain in self.domains]
         print("domains", self.domains)
         print("action dims", self.action_dims)
 
         self.train_dataset: Optional[Dataset] = None
         self.val_dataset: Optional[Dataset] = None
+
+        if self.hparams.source_data_type == "full":
+            self.hparams.dataset_types = ["fullcollect"]
+        elif self.hparams.source_data_type == "rand":
+            self.hparams.dataset_types = ["randcollect"]
+        elif self.hparams.source_data_type == "mix":
+            self.hparams.dataset_types = ["fullcollect", "randcollect"]
+            self.hparams.num_steps = self.hparams.num_steps // 2
 
     @property
     def context_length(self) -> int:

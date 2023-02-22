@@ -1,30 +1,45 @@
-from collections import OrderedDict
-from typing import Any, List
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
-import numpy as np
+from collections import OrderedDict
+from typing import Any, Dict, List
+
 import torch
 from pytorch_lightning import LightningModule
-from torch.nn import functional as F
 
 from models.components.mingpt import GPT, GPTConfig
-from models.utils import (
-    get_exp_return,
-    get_exp_return_dmc,
-    get_min_action,
-    get_min_action_dmc,
-    top_k_logits,
-)
+from models.utils import get_min_action_dmc
 
 
 class MultiTaskCTLitModule(LightningModule):
-    """LightningModule for multi-task control transformer.
-    """
+    """LightningModule for multi-task control transformer."""
 
     def __init__(
-        self, 
-        betas=(0.9, 0.95),
-        weight_decay=0.1,
-        **kwargs
+        self,
+        epochs: int,
+        agent_type: str,
+        model_type: str,
+        timestep: int,
+        n_embd: int,
+        lr: float,
+        forward: bool,
+        inverse: bool,
+        reward: bool,
+        rand_inverse: bool,
+        unsupervise: bool,
+        rand_mask_size: int,
+        freeze_encoder: bool,
+        context_length: int,
+        betas: List[float],
+        weight_decay: float,
+        n_layer: int,
+        n_head: int,
+        mask_obs_size: int,
+        pred_layers: int,
+        bc_layers: int,
+        rtg_layers: int,
+        forward_weight: float,
+        source_envs: Dict[str, List[str]],
     ):
         super().__init__()
 
@@ -39,7 +54,7 @@ class MultiTaskCTLitModule(LightningModule):
             for domain in self.domains:
                 vocab_size += get_min_action_dmc(domain)
         else:
-            vocab_size = get_min_action_dmc(self.hparams.domain)  
+            vocab_size = get_min_action_dmc(self.hparams.domain)
 
         if self.hparams.agent_type == "gpt":
             block_size = self.hparams.context_length * 2
@@ -62,55 +77,6 @@ class MultiTaskCTLitModule(LightningModule):
             print(self.hparams)
         else:
             assert "agent type not supported"
-
-    @staticmethod
-    def add_model_specific_args(parent_parser):
-        parser = parent_parser.add_argument_group("CTModel")
-
-        parser.add_argument("--agent_type", type=str, default="gpt")
-        parser.add_argument(
-            "--model_type", type=str, default="reward_conditioned", choices=["reward_conditioned", "naive"]
-        )
-        parser.add_argument("--n_embd", type=int, default=256)
-        parser.add_argument("--lr", type=float, default=6e-4)
-
-        ## whether to use supervision
-        parser.add_argument('--unsupervise', action='store_true')
-        parser.add_argument('--no-unsupervise', dest='unsupervise', action='store_false')
-        parser.set_defaults(unsupervise=True)
-
-        ## whether to use whether to use forward prediction
-        parser.add_argument('--forward', action='store_true')
-        parser.add_argument('--no-forward', dest='forward', action='store_false')
-        parser.set_defaults(forward=True)
-
-        ## whether to use whether to use inverse prediction
-        parser.add_argument('--inverse', action='store_true')
-        parser.add_argument('--no-inverse', dest='inverse', action='store_false')
-        parser.set_defaults(inverse=True)
-
-        ## whether to use whether to use random mask hindsight control
-        parser.add_argument('--rand_inverse', action='store_true')
-        parser.add_argument('--no-rand_inverse', dest='rand_inverse', action='store_false')
-        parser.set_defaults(rand_inverse=True)
-
-        parser.add_argument("--rand_mask_size", type=int, default=-1, help="mask size for action, -1 is to set masks by curriculum")
-        parser.add_argument("--mask_obs_size", type=int, default=-1, help="mask size for observations, -1 is to set masks by curriculum")
-        
-        # weights
-        parser.add_argument("--forward_weight", type=float, default=1.0)
-
-        # layers and network configs
-        parser.add_argument("--n_layer", type=int, default=8)
-        parser.add_argument("--n_head", type=int, default=8)
-        parser.add_argument("--rtg_layers", type=int, default=1)
-        parser.add_argument("--bc_layers", type=int, default=1)
-        parser.add_argument("--pred_layers", type=int, default=1) 
-
-        ## additional options that are not used in the original method
-        parser.add_argument("--reward", default=False, action="store_true", help="whether to predict reward")
-
-        return parent_parser
 
     def training_step(self, batch: Any, batch_idx: int):
         obs, actions, rtg, ts, rewards, task_ids = batch
