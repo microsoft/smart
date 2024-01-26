@@ -170,8 +170,8 @@ python src/dmc_downstream.py \
         data.num_steps=1000000 \
         domain_and_task.domain=${DOMAIN} \
         domain_and_task.task=${TASK} \
-        model.model_type=reward_conditioned
-        data.rand_select=False
+        model.model_type=reward_conditioned \
+        data.rand_select=True \
         no_load_action=True \
         load_model_from=./outputs/pretrain_explore/checkpoints/last.ckpt \
         output_dir=./outputs/${DOMAIN}_${TASK}_bc/

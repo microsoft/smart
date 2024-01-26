@@ -13,11 +13,7 @@ from utils import pl_utils
 def main(cfg):
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-    if cfg.model.model_type == "naive":
-        # bc = True
-        dmc_data = DMCBCDataModule(**cfg.data)
-    else:
-        dmc_data = DMCDataModule(**cfg.data)
+    dmc_data = DMCBCDataModule(**cfg.data)
 
     model = pl_utils.instantiate_class(cfg["model"])
     if cfg.load_model_from:

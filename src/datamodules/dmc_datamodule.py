@@ -240,20 +240,7 @@ class MultiTaskStateActionReturnDataset(Dataset):
 
 
 class DMCDataModule(LightningDataModule):
-    """Example of LightningDataModule for Atari DQN Replay Buffer dataset.
-
-    A DataModule implements 5 key methods:
-        - prepare_data (things to do on 1 GPU/TPU, not on every GPU/TPU in distributed mode)
-        - setup (things to do on every accelerator in distributed mode)
-        - train_dataloader (the training dataloader)
-        - val_dataloader (the validation dataloader(s))
-        - test_dataloader (the test dataloader(s))
-
-    This allows you to share a full dataset without explaining how to download,
-    split, transform and process the data.
-
-    Read the docs:
-        https://pytorch-lightning.readthedocs.io/en/latest/extensions/datamodules.html
+    """DMC Dataset for one specific domain and task.
     """
 
     def __init__(
@@ -369,32 +356,12 @@ class DMCDataModule(LightningDataModule):
 
     def test_dataloader(self):
         return None
-        # return DataLoader(
-        #     self.test_dataset,
-        #     shuffle=False,
-        #     pin_memory=True,
-        #     batch_size=self.hparams.batch_size,
-        #     num_workers=self.hparams.num_workers,
-        #     persistent_workers=True
-        # )
 
 
 class DMCBCDataModule(LightningDataModule):
-    """Example of LightningDataModule for behavior cloning on DMC. Only top 10 percent trajectories
-    are used.
-
-    A DataModule implements 5 key methods:
-        - prepare_data (things to do on 1 GPU/TPU, not on every GPU/TPU in distributed mode)
-        - setup (things to do on every accelerator in distributed mode)
-        - train_dataloader (the training dataloader)
-        - val_dataloader (the validation dataloader(s))
-        - test_dataloader (the test dataloader(s))
-
-    This allows you to share a full dataset without explaining how to download,
-    split, transform and process the data.
-
-    Read the docs:
-        https://pytorch-lightning.readthedocs.io/en/latest/extensions/datamodules.html
+    """DMC dataset on one specific domain and task with data subsampling. 
+    For behavior cloning: only top k percent trajectories (expert data) are used.
+    For reward-conditioned learning: randomly selected k percent trajectories are used.
     """
 
     def __init__(
@@ -412,7 +379,7 @@ class DMCBCDataModule(LightningDataModule):
         train_replay_id=1,
         val_replay_id=2,
         select_rate=0.1,
-        rand_select=False,
+        rand_select=False, # True for reward-conditioned learning
     ):
         super().__init__()
 

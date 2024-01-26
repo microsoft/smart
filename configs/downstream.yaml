@@ -66,10 +66,8 @@ data:
   num_workers: 1
   train_replay_id: 1
   val_replay_id: 2
-
-  # used for DMCBCDataModule only (used when model_type is "naive")
-  select_rate: 0
-  rand_select: False
+  select_rate: 0.1
+  rand_select: False # True for reward-conditioned learning
 
 # DTModel
 model:
